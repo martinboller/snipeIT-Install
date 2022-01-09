@@ -15,9 +15,20 @@ Most of the Snipe-IT specific details, shamelessly lifted from the installation 
 #### 2022-01-09 - Initial version
   Version 1.00
 
->**Important: Do NOT use the process below for production, as Vagrant leaves some unfortunate security artifacts behind. The install-snipe.sh alone can be used on a known secure installation of Debian 11, or you could remove Vagrant artifacts (the former is preferred)**
+### Production Installation
+Prerequisite: A Debian 11 server up and running.
+- Run git clone https://github.com/martinboller/snipeIT-Install.git
+- Change directory into ./snipeIT-Install/
+- Execute ./install-snipe.sh
+- Connect to https://nameofsnipeserver/ in your favorite browser and follow the guide to do the initial configuration of Snipe-IT.
+
+The above procedure should install everything needed to run Snipe-IT.
+
 
 ## Quick installation - If you just want to get on with it
+
+>**Important: Do NOT use the process below for production, as Vagrant leaves some unfortunate security artifacts behind. The install-snipe.sh alone can be used on a known secure installation of Debian 11, or you could remove Vagrant artifacts (the former is preferred)**
+
 ### Packages required
 All that is needed to spin up test systems is:
  - VirtualBox https://www.virtualbox.org/
@@ -43,7 +54,7 @@ Prerequisite: A DHCP server on the network, alternatively change the NIC to use 
  - Change directory into /mnt/data/Environments/
  - Run git clone https://github.com/martinboller/snipeIT-Install.git
  - Change directory into /mnt/data/Environments/snipeIT-Install/
- - Execute vagrant up snipe and wait for the OS to install
+ - Execute vagrant up simo and wait for the OS to install
 
 You may have to select which NIC to use for this e.g. wl08p01
  

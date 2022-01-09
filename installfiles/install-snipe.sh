@@ -11,8 +11,8 @@
 # Changes:      Initial Version (1.00)                                      #
 #                                                                           #
 # Info:         Installing Snipe-IT on Debian 11                            #
-#               Most of the work done by the snipeit.sh                     #
-#               Script created by Mike Tucker                               #
+#               Most of the work done by the install                        #
+#                  Script created by Mike Tucker                            #
 #                   mtucker6784@gmail.com                                   #
 #                                                                           #
 # Instruction:  Run this script as root on a fully updated                  #
@@ -536,6 +536,13 @@ create_user () {
 }
 
 install_composer () {
+    
+    ######################################################
+    #       Originally from the Snipe-It Install         #
+    #          Script created by Mike Tucker             #
+    #            mtucker6784@gmail.com                   #
+    ######################################################
+    
     echo -e "\e[1;32m - install_composer()"
     echo -e "\e[1;36m ... getting composer signature.\e[0m"
     # https://getcomposer.org/doc/faqs/how-to-install-composer-programmatically.md
@@ -559,6 +566,13 @@ install_composer () {
 }
 
 install_snipeit () {
+    
+    ######################################################
+    #       Originally from the Snipe-It Install         #
+    #          Script created by Mike Tucker             #
+    #            mtucker6784@gmail.com                   #
+    ######################################################
+    
     echo -e "\e[1;32m - install_snipeit()"
     echo -e "\e[1;36m ... create databases.\e[0m"
     mysql -u root --execute="CREATE DATABASE snipeit;GRANT ALL PRIVILEGES ON snipeit.* TO snipeit@localhost IDENTIFIED BY '$mysqluserpw';" > /dev/null 2>&1
@@ -596,6 +610,13 @@ rename_default_vhost() {
 }
 
 configure_permissions() {
+
+    ######################################################
+    #       Originally from the Snipe-It Install         #
+    #          Script created by Mike Tucker             #
+    #            mtucker6784@gmail.com                   #
+    ######################################################
+    
     echo -e "\e[1;32m - configure_permissions()"
     echo -e "\e[1;36m ... Setting permissions.\e[0m"
     for chmod_dir in "$APP_PATH/storage" "$APP_PATH/public/uploads"; do
@@ -606,6 +627,13 @@ configure_permissions() {
 }
 
 run_composer() {
+    
+    ######################################################
+    #       Originally from the Snipe-It Install         #
+    #          Script created by Mike Tucker             #
+    #            mtucker6784@gmail.com                   #
+    ######################################################
+    
     echo -e "\e[1;32m - run_composer()"
     echo -e "\e[1;36m ... Running composer."
     # We specify the path to composer because CentOS lacks /usr/local/bin in $PATH when using sudo

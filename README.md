@@ -54,7 +54,9 @@ Prerequisite: A DHCP server on the network, alternatively change the NIC to use 
  - Change directory into /mnt/data/Environments/
  - Run git clone https://github.com/martinboller/snipeIT-Install.git
  - Change directory into /mnt/data/Environments/snipeIT-Install/
- - Execute vagrant up simo and wait for the OS to install
+ - Execute vagrant up simo<sup>1</sup> and wait for the OS to install
+
+<sup>1</sup>https://www.simohayha.com/
 
 You may have to select which NIC to use for this e.g. wl08p01
  

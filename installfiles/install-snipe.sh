@@ -188,7 +188,6 @@ configure_apache() {
     SSLUseStapling On
     SSLStaplingCache "shmcb:logs/ssl_stapling(32768)"
 __EOF__
-   a2ensite $APP_NAME.conf > /dev/null 2>&1
  
     echo -e "\e[1;36m ... turning of some apache specific header information\e[0m";
     # Turn off detail Header information
@@ -204,6 +203,7 @@ __EOF__
     done
     chown -R snipeitapp:www-data $APP_PATH/
     echo -e "\e[1;36m ... restarting apache with new configuration\e[0m";
+    a2ensite $APP_NAME.conf > /dev/null 2>&1
     systemctl restart apache2.service > /dev/null 2>&1;
     echo -e "\e[1;32m - configure_apache() finished"
     /usr/bin/logger 'configure_apache() finished' -t 'snipeit-2022-01-05';

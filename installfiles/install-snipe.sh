@@ -680,6 +680,15 @@ run_composer() {
     /usr/bin/logger 'run_composer() finished' -t 'snipeit-2022-01-10';
 }
 
+install_pip_snipeit() {
+    /usr/bin/logger 'install_pip_snipeit()' -t 'snipeit-2022-01-10';
+    echo -e "\e[1;32m - install_pip_snipeit()"
+    echo -e "\e[1;36m ... installing python pip module for Snipe-IT as $APP_USER.\e[0m"
+    sudo -i -u $APP_USER python3 -m pip install snipeit
+    echo -e "\e[1;32m - install_pip_snipeit() finished"
+    /usr/bin/logger 'install_pip_snipeit() finished' -t 'snipeit-2022-01-10';
+}
+
 ##################################################################################################################
 ## Main                                                                                                          #
 ##################################################################################################################
@@ -744,6 +753,7 @@ main() {
         # Configuration of mail server require user input, so not working with Vagrant
         #configure_mail_server;
         configure_permissions;
+        install_pip_snipeit;
         show_databases;
         check_services;
         /usr/bin/logger 'snipeit Installation complete' -t 'snipeit-2022-01-10';

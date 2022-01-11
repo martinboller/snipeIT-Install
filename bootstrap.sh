@@ -26,6 +26,7 @@ LC_ALL=C.UTF-8
 __EOF__
   echo -e "\e[36m ... updating locale (default:C.UTF-8)\e[0m";
   update-locale > /dev/null 2>&1;
+  echo -e "\e[32m - configure_locale() finished\e[0m";
   /usr/bin/logger 'configure_locale() finished' -t 'snipeit';
 }
 

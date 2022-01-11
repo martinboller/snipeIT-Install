@@ -5,10 +5,11 @@
 # Author:       Martin Boller                                               #
 #                                                                           #
 # Email:        martin@bollers.dk                                           #
-# Last Update:  2022-01-09                                                  #
-# Version:      1.00                                                        #
+# Last Update:  2022-01-11                                                  #
+# Version:      1.10                                                        #
 #                                                                           #
 # Changes:      Initial Version (1.00)                                      #
+#               https in .env file or logo / pictures doesn't show (1.10)   #
 #                                                                           #
 # Info:         Installing Snipe-IT on Debian 11                            #
 #               Most of the work done by the install                        #
@@ -22,33 +23,35 @@
 
 
 install_prerequisites() {
-    /usr/bin/logger 'install_prerequisites' -t 'snipeit-2022-01-05';
+    /usr/bin/logger 'install_prerequisites' -t 'snipeit-2022-01-10';
     echo -e "\e[1;32m - install_prerequisites"
     echo -e "\e[1;36m ... installing Prerequisite packages\e[0m";
     tzone=$(cat /etc/timezone)
     export DEBIAN_FRONTEND=noninteractive;
-    /usr/bin/logger "Operating System: $OS Version: $VER" -t 'snipeit-2022-01-05';
-    echo -e "\e[1;36m ... Operating System: $OS Version: $VER\e[0m";
     # Install prerequisites
-    echo -e "\e[1;36m ... Adding PHP repository.\e[0m"
+    #echo -e "\e[1;36m ... adding PHP repository.\e[0m"
     apt-get -qq -y install apt-transport-https lsb-release ca-certificates > /dev/null 2>&1
     wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg > /dev/null 2>&1
     echo "deb https://packages.sury.org/php/ $codename main" > /etc/apt/sources.list.d/php.list
     echo -e "\e[1;36m ... updating all packages\e[0m";
     apt-get -qq update > /dev/null 2>&1;
     # Install some basic tools on a Debian net install
-    /usr/bin/logger '..Install some basic tools on a Debian net install' -t 'snipeit-2022-01-05';
+    /usr/bin/logger '..Install some basic tools on a Debian net install' -t 'snipeit-2022-01-10';
     echo -e "\e[1;36m ... installing packages missing from Debian net-install\e[0m";
     apt-get -qq -y install --fix-policy > /dev/null 2>&1;
     apt-get -qq -y install adduser wget whois unzip curl gnupg2 software-properties-common dnsutils python3 python3-pip > /dev/null 2>&1;
 
-    echo -e "\e[1;36m ... Installing Apache httpd, PHP, MariaDB\e[0m" 
-    apt-get -qq -y install mariadb-server mariadb-client apache2 libapache2-mod-php7.4 php7.4 php7.4-mcrypt \
-        php7.4-curl php7.4-mysql php7.4-gd php7.4-ldap php7.4-zip php7.4-mbstring php7.4-xml php7.4-bcmath curl git unzip > /dev/null 2>&1
+    echo -e "\e[1;36m ... installing MariaDB, Apache Web Server, PHP, and other required packages\e[0m" 
+    #apt-get -qq -y install mariadb-server mariadb-client apache2 libapache2-mod-php7.4 php7.4 php7.4-mcrypt php7.4-curl \
+    #    php7.4-mysql php7.4-gd php7.4-ldap php7.4-zip php7.4-mbstring php7.4-xml php7.4-bcmath curl git unzip > /dev/null 2>&1
+    apt-get -qq -y install mariadb-server mariadb-client apache2 libapache2-mod-php php php-mcrypt php-curl \
+        php-mysql php-gd php-ldap php-zip php-mbstring php-xml php-bcmath curl git unzip > /dev/null 2>&1
+    # Some additional libraries for php-gd
+    apt-get -qq -y install libpng-dev libjpeg-dev libwebp-dev libgd2-xpm-dev* > /dev/null 2>&1
     # Set locale
     # Install other preferences and clean up APT
     echo -e "\e[1;36m ... installing some preferences on Debian and cleaning up apt\e[0m";
-    /usr/bin/logger '....installing some preferences on Debian and cleaning up apt' -t 'snipeit-2022-01-05';
+    /usr/bin/logger '....installing some preferences on Debian and cleaning up apt' -t 'snipeit-2022-01-10';
     apt-get -qq -y install bash-completion > /dev/null 2>&1;
     # Install SUDO
     apt-get -qq -y install sudo > /dev/null 2>&1;
@@ -64,11 +67,11 @@ install_prerequisites() {
     apt-get -qq -y python3-pip > /dev/null 2>&1;
     python3 -m pip install --upgrade pip > /dev/null 2>&1;
     echo -e "\e[1;32m - install_prerequisites finished"
-    /usr/bin/logger 'install_prerequisites finished' -t 'snipeit-2022-01-05';
+    /usr/bin/logger 'install_prerequisites finished' -t 'snipeit-2022-01-10';
 }
 
 generate_certificates() {
-    /usr/bin/logger 'generate_certificates()' -t 'snipeit-2022-01-05';
+    /usr/bin/logger 'generate_certificates()' -t 'snipeit-2022-01-10';
     echo -e "\e[1;32m - generate_certificates"
     mkdir -p $APACHE_CERTS_DIR > /dev/null 2>&1;
     echo -e "\e[1;36m ... generating openssl.cnf file\e[0m";
@@ -101,7 +104,7 @@ __EOF__
     openssl x509 -in $APACHE_CERTS_DIR/$HOSTNAME.csr -out $APACHE_CERTS_DIR/$HOSTNAME.crt -req -signkey $APACHE_CERTS_DIR/$HOSTNAME.key -days 365 > /dev/null 2>&1
     chmod 600 $APACHE_CERTS_DIR/$HOSTNAME.key > /dev/null 2>&1
     echo -e "\e[1;32m - generate_certificates finished"
-    /usr/bin/logger 'generate_certificates() finished' -t 'snipeit-2022-01-05';
+    /usr/bin/logger 'generate_certificates() finished' -t 'snipeit-2022-01-10';
 }
 
 prepare_nix() {
@@ -112,7 +115,7 @@ prepare_nix() {
     BUILDDATE=$(date +%Y-%m-%d)
     cat << __EOF__ >> /etc/motd
            
-        $HOSTNAME
+                $HOSTNAME
 
 *****************************************************        
 *      _____       _                  __________    *
@@ -126,8 +129,8 @@ prepare_nix() {
              (\__/) ||
              (•ㅅ•) ||
             /  　  づ
-     Automated install v  1.0
-            2022-01-04
+         Automated install v  1.0
+                2022-01-10
 
 __EOF__
     echo -e "\e[1;36m ... configuring motd display\e[0m";
@@ -135,11 +138,11 @@ __EOF__
     sed -ie 's/session    optional     pam_motd.so  motd=\/etc\/motd/#session    optional     pam_motd.so  motd=\/etc\/motd/' /etc/pam.d/sshd > /dev/null 2>&1
     sync;
     echo -e "\e[1;32m - prepare_nix() finished"
-    /usr/bin/logger 'prepare_nix() finished' -t 'snipeit-2022-01-05';
+    /usr/bin/logger 'prepare_nix() finished' -t 'snipeit-2022-01-10';
 }
 
 configure_apache() {
-    /usr/bin/logger 'configure_apache()' -t 'snipeit-2022-01-05';
+    /usr/bin/logger 'configure_apache()' -t 'snipeit-2022-01-10';
     echo -e "\e[1;32m - configure_apache()"
     # Change ROOTCA to point to correct cert when/if not using self signed cert.
     export ROOTCA=$HOSTNAME
@@ -201,12 +204,12 @@ __EOF__
     for chmod_dir in "$APP_PATH/storage" "$APP_PATH/public/uploads"; do
         chmod -R 775 "$chmod_dir" > /dev/null 2>&1
     done
-    chown -R snipeitapp:www-data $APP_PATH/
+    chown -R $APP_USER:$apache_group $APP_PATH/
     echo -e "\e[1;36m ... restarting apache with new configuration\e[0m";
     a2ensite $APP_NAME.conf > /dev/null 2>&1
     systemctl restart apache2.service > /dev/null 2>&1;
     echo -e "\e[1;32m - configure_apache() finished"
-    /usr/bin/logger 'configure_apache() finished' -t 'snipeit-2022-01-05';
+    /usr/bin/logger 'configure_apache() finished' -t 'snipeit-2022-01-10';
 }
 
 configure_iptables() {
@@ -351,54 +354,59 @@ exit 0
 __EOF__
     sync;
     ## make the script executable
-    chmod +x /etc/network/if-up.d/firewallrules> /dev/null 2>&1;
+    chmod +x /etc/network/if-up.d/firewallrules > /dev/null 2>&1;
     # Apply firewall rules for the first time
     #/etc/network/if-up.d/firewallrules;
     /usr/bin/logger 'configure_iptables() done' -t 'Firewall setup';
 }
 
 show_databases() {
+    /usr/bin/logger 'show_databases()' -t 'snipeit-2022-01-10';
     echo -e ""
     echo -e "\e[1;32m------------------------------\e[0m"
     echo -e ""
     echo -e "\e[1;32mShowing databases....."
     mysql -e "show databases;"
     echo -e "\e[1;32m------------------------------\e[0m"
-    /usr/bin/logger ''Databases $(mysql -e "show databases;")'' -t 'snipeit-2022-01-05';
+    /usr/bin/logger 'show_databases() finished' -t 'snipeit-2022-01-10';
 }
 
 check_services() {
-    /usr/bin/logger 'check_services' -t 'snipeit-2022-01-05';
+    /usr/bin/logger 'check_services' -t 'snipeit-2022-01-10';
     echo -e "\e[1;32m - check_services()"
     # Check status of critical services
-    # Apache
+    # Apache and MariaDB after restarting them
+    echo -e "\e[1;36m ... restarting MariaDB\e[0m";
+    systemctl restart mariadb.service  > /dev/null 2>&1
+    echo -e "\e[1;36m ... restarting Apache Web Server\e[0m";
+    systemctl restart apache2.service  > /dev/null 2>&1
     echo -e "\e[1;32m-----------------------------------------------------------------\e[0m";
     echo -e "\e[1;32m - Checking core daemons for Snipe-IT......\e[0m";
     if systemctl is-active --quiet apache2.service;
         then
             echo -e "\e[1;32m ... apache webserver started successfully";
-            /usr/bin/logger 'apache webserver started successfully' -t 'snipeit-2022-01-05';
+            /usr/bin/logger 'apache webserver started successfully' -t 'snipeit-2022-01-10';
         else
             echo -e "\e[1;31m ... apache webserver FAILED!\e[0m";
-            /usr/bin/logger 'apache webserver FAILED' -t 'snipeit-2022-01-05';
+            /usr/bin/logger 'apache webserver FAILED' -t 'snipeit-2022-01-10';
     fi
     # mariadb.service
     if systemctl is-active --quiet mariadb.service;
         then
             echo -e "\e[1;32m ... mariadb.service started successfully";
-            /usr/bin/logger 'mariadb.service started successfully' -t 'snipeit-2022-01-05';
+            /usr/bin/logger 'mariadb.service started successfully' -t 'snipeit-2022-01-10';
         else
             echo -e "\e[1;31m ... mariadb.service FAILED!\e[0m";
-            /usr/bin/logger "mariadb.service FAILED!" -t 'snipeit-2022-01-05';
+            /usr/bin/logger "mariadb.service FAILED!" -t 'snipeit-2022-01-10';
     fi
     echo -e "\e[1;32m - check_services() finished"
-    /usr/bin/logger 'check_services finished' -t 'snipeit-2022-01-05';
+    /usr/bin/logger 'check_services finished' -t 'snipeit-2022-01-10';
 }
 
 mariadb_secure_installation() {
     ## This function is based on the mysql-secure-installation script
     ## Provided with MariaDB
-    /usr/bin/logger 'mariadb_secure_installation()' -t 'snipeit-2022-01-05';
+    /usr/bin/logger 'mariadb_secure_installation()' -t 'snipeit-2022-01-10';
     echo -e "\e[1;32m - mariadb_secure_installation()"
     echo -e "\e[1;36m ... securing MariaDB\e[0m"
     # Remove anonymous users
@@ -406,21 +414,21 @@ mariadb_secure_installation() {
     /usr/bin/mysql -e "DELETE FROM mysql.global_priv WHERE User='';" > /dev/null 2>&1
     if [ $? -eq 0 ]; then
         echo -e "\e[1;32m ... Success: Anonymous users removed!\e[0m"
-        /usr/bin/logger 'Success: Anonymous users removed' -t 'snipeit-2022-01-05';
+        /usr/bin/logger 'Success: Anonymous users removed' -t 'snipeit-2022-01-10';
     else
         echo -e "\e[1;31m ... Critical: Anonymous users could not be removed!\e[0m"
-        /usr/bin/logger 'Critical: Anonymous users could not be removed' -t 'snipeit-2022-01-05';
+        /usr/bin/logger 'Critical: Anonymous users could not be removed' -t 'snipeit-2022-01-10';
     fi
 
     # Remove remote root 
-    echo -e "\e[1;36m ... Removing remote root...\e[0m"
+    echo -e "\e[1;36m ... removing remote root...\e[0m"
     /usr/bin/mysql -e "DELETE FROM mysql.global_priv WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');" > /dev/null 2>&1
     if [ $? -eq 0 ]; then
         echo -e "\e[1;32m ... Success: Remote root successfully removed!\e[0m"
-        /usr/bin/logger 'Success: Remote root removed' -t 'snipeit-2022-01-05';
+        /usr/bin/logger 'Success: Remote root removed' -t 'snipeit-2022-01-10';
     else
         echo -e "\e[1;31m ... Critical: Remote root could not be removed!\e[0m"
-        /usr/bin/logger 'Critical: Remote root could not be removed' -t 'snipeit-2022-01-05';
+        /usr/bin/logger 'Critical: Remote root could not be removed' -t 'snipeit-2022-01-10';
     fi
     
     # Remove test database
@@ -428,40 +436,41 @@ mariadb_secure_installation() {
     /usr/bin/mysql -e "DROP DATABASE IF EXISTS test;" > /dev/null 2>&1
     if [ $? -eq 0 ]; then
         echo -e "\e[1;32m ... Success: Test database removed!\e[0m"
-        /usr/bin/logger 'Success: Test database removed' -t 'snipeit-2022-01-05';
+        /usr/bin/logger 'Success: Test database removed' -t 'snipeit-2022-01-10';
     else
         echo -e "\e[1;31m ... Warning: Test database could not be removed! Not critical...\e[0m"
-        /usr/bin/logger 'Warning: Test database could not be removed' -t 'snipeit-2022-01-05';
+        /usr/bin/logger 'Warning: Test database could not be removed' -t 'snipeit-2022-01-10';
     fi
 
     echo -e "\e[1;36m ... Removing privileges on test database...\e[0m"
     /usr/bin/mysql -e "DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%'" > /dev/null 2>&1
     if [ $? -eq 0 ]; then
         echo -e "\e[1;32m ... Success: privileges on test database removed!\e[0m"
-        /usr/bin/logger 'Success: Privileges on test database removed' -t 'snipeit-2022-01-05';
+        /usr/bin/logger 'Success: Privileges on test database removed' -t 'snipeit-2022-01-10';
     else
-        echo -e "\e[1;35m ... Warning: privileges on test database not removed\e[0m"
-        /usr/bin/logger 'Warning: Privileges on test database could not be removed' -t 'snipeit-2022-01-05';
+        echo -e "\e[1;33m ... Warning: privileges on test database not removed\e[0m"
+        /usr/bin/logger 'Warning: Privileges on test database could not be removed' -t 'snipeit-2022-01-10';
     fi
 
     # Reload privilege tables
-    echo -e "\e[1;36m ... Reloading privilege tables...\e[0m"
+    echo -e "\e[1;36m ... reloading privilege tables...\e[0m"
     /usr/bin/mysql -e "FLUSH PRIVILEGES;" > /dev/null 2>&1
     if [ $? -eq 0 ]; then
         echo -e "\e[1;32m ... Success: privilege tables reloaded"
         return 0
     else
-        echo -e "\e[1;35m ... Warning: privilege tables could not be reloaded"
+        echo -e "\e[1;33m ... Warning: privilege tables could not be reloaded"
         return 1
     fi
-    /usr/bin/logger 'mariadb_secure_installation() finished' -t 'snipeit-2022-01-05';
+    /usr/bin/logger 'mariadb_secure_installation() finished' -t 'snipeit-2022-01-10';
     echo -e "\e[1;32m - securing MariaDB finished\e[0m"
 }
 
 configure_mail_server() {
-    /usr/bin/logger 'configure_mail_server()' -t 'snipeit-2022-01-05';
+    /usr/bin/logger 'configure_mail_server()' -t 'snipeit-2022-01-10';
     echo -e "\e[1;32m - configure_mail_server()\e[0m"
     # Setting up mail server config
+
     ######################################################
     #       Originally from the Snipe-It Install         #
     #          Script created by Mike Tucker             #
@@ -470,49 +479,55 @@ configure_mail_server() {
     
     setupmail=default
     until [[ $setupmail == "yes" ]] || [[ $setupmail == "no" ]]; do
+    echo -e "\e[1;32m"
     echo -n "  Q. Do you want to configure mail server settings? (y/n) "
     read -r setupmail
 
     case $setupmail in
     [yY] | [yY][Ee][Ss] )
-        echo -e "\e[1;32m"
-        echo -n " - Outgoing mailserver address: "
+        # Mail Server details
+        # Server address or name
+        echo -n " - Outgoing mailserver IP address or hostname (fqdn): "
         read -r mailhost
         sed -i "s|^\\(MAIL_HOST=\\).*|\\1$mailhost|" "$APP_PATH/.env"
-
+        #port
         echo -n " - Server port number: "
         read -r mailport
         sed -i "s|^\\(MAIL_PORT=\\).*|\\1$mailport|" "$APP_PATH/.env"
-
+        #username
         echo -n "  Username: "
         read -r mailusername
         sed -i "s|^\\(MAIL_USERNAME=\\).*|\\1$mailusername|" "$APP_PATH/.env"
-
+        #password
         echo -n " - Password: "
         read -rs mailpassword
         sed -i "s|^\\(MAIL_PASSWORD=\\).*|\\1$mailpassword|" "$APP_PATH/.env"
         echo ""
-
+        #encryption
         echo -n " - Encryption(null/TLS/SSL): "
         read -r mailencryption
         sed -i "s|^\\(MAIL_ENCRYPTION=\\).*|\\1$mailencryption|" "$APP_PATH/.env"
 
+        # Account details
+        #from address
         echo -n "  From address: "
         read -r mailfromaddr
         sed -i "s|^\\(MAIL_FROM_ADDR=\\).*|\\1$mailfromaddr|" "$APP_PATH/.env"
-
+        #from name
         echo -n " - From name: "
         read -r mailfromname
         sed -i "s|^\\(MAIL_FROM_NAME=\\).*|\\1$mailfromname|" "$APP_PATH/.env"
-
+        #reply to address
         echo -n " - Reply to address: "
         read -r mailreplytoaddr
         sed -i "s|^\\(MAIL_REPLYTO_ADDR=\\).*|\\1$mailreplytoaddr|" "$APP_PATH/.env"
-
+        #reply to name
         echo -n " - Reply to name: "
         read -r mailreplytoname
         sed -i "s|^\\(MAIL_REPLYTO_NAME=\\).*|\\1$mailreplytoname|" "$APP_PATH/.env"
         echo -e "\e[0m"
+        # Create file to indicate mail is configured
+        touch $mailconfigFILE;
         setupmail="yes"
         ;;
     [nN] | [n|N][O|o] )
@@ -522,15 +537,16 @@ configure_mail_server() {
         ;;
     esac
     done
-    /usr/bin/logger 'configure_mail_server() finished' -t 'snipeit-2022-01-05';
+    echo -e "\e[0m"
+    /usr/bin/logger 'configure_mail_server() finished' -t 'snipeit-2022-01-10';
     echo -e "\e[1;32m - configure_mail_server() finished\e[0m"
 }
 
 create_user () {
     echo -e "\e[1;32m - create_user()"
-    echo -e "\e[1;36m ... Creating Snipe-IT user $APP_USER.\e[0m"
+    echo -e "\e[1;36m ... creating Snipe-IT user $APP_USER.\e[0m"
     adduser --quiet --disabled-password --gecos 'Snipe-IT User' "$APP_USER" > /dev/null 2>&1
-    echo -e "\e[1;36m ... Adding Snipe-IT user to group $apache_group.\e[0m"
+    echo -e "\e[1;36m ... adding Snipe-IT user to group $apache_group.\e[0m"
     usermod -a -G "$apache_group" "$APP_USER" > /dev/null 2>&1
     echo -e "\e[1;32m - create_user()"
 }
@@ -543,6 +559,7 @@ install_composer () {
     #            mtucker6784@gmail.com                   #
     ######################################################
     
+    /usr/bin/logger 'install_composer()' -t 'snipeit-2022-01-10';
     echo -e "\e[1;32m - install_composer()"
     echo -e "\e[1;36m ... getting composer signature.\e[0m"
     # https://getcomposer.org/doc/faqs/how-to-install-composer-programmatically.md
@@ -563,6 +580,7 @@ install_composer () {
 
     mv "$(eval echo ~$APP_USER)"/composer.phar /usr/local/bin/composer > /dev/null 2>&1
     echo -e "\e[1;32m - install_composer() finished"
+    /usr/bin/logger 'install_composer() finished' -t 'snipeit-2022-01-10';
 }
 
 install_snipeit () {
@@ -573,14 +591,15 @@ install_snipeit () {
     #            mtucker6784@gmail.com                   #
     ######################################################
     
+    /usr/bin/logger 'install_snipeit()' -t 'snipeit-2022-01-10';
     echo -e "\e[1;32m - install_snipeit()"
     echo -e "\e[1;36m ... create databases.\e[0m"
     mysql -u root --execute="CREATE DATABASE snipeit;GRANT ALL PRIVILEGES ON snipeit.* TO snipeit@localhost IDENTIFIED BY '$mysqluserpw';" > /dev/null 2>&1
 
-    echo -e "\e[1;36m ... Cloning Snipe-IT from github to the web directory.\e[0m"
+    echo -e "\e[1;36m ... cloning Snipe-IT from github to \e[1;33m$APP_PATH.\e[0m"
     git clone --quiet https://github.com/snipe/snipe-it $APP_PATH > /dev/null 2>&1
 
-    echo -e "\e[1;36m ... Configuring $APP_NAME .env file.\e[0m"
+    echo -e "\e[1;36m ... configuring the $APP_NAME $APP_PATH/.env file.\e[0m"
     cp "$APP_PATH/.env.example" "$APP_PATH/.env" > /dev/null 2>&1
 
     #TODO escape SED delimiter in variables
@@ -590,23 +609,28 @@ install_snipeit () {
     sed -i "s|^\\(DB_DATABASE=\\).*|\\1snipeit|" "$APP_PATH/.env" > /dev/null 2>&1
     sed -i "s|^\\(DB_USERNAME=\\).*|\\1snipeit|" "$APP_PATH/.env" > /dev/null 2>&1
     sed -i "s|^\\(DB_PASSWORD=\\).*|\\1'$mysqluserpw'|" "$APP_PATH/.env" > /dev/null 2>&1
-    sed -i "s|^\\(APP_URL=\\).*|\\1http://$fqdn|" "$APP_PATH/.env" > /dev/null 2>&1
+    sed -i "s|^\\(APP_URL=\\).*|\\1https://$fqdn|" "$APP_PATH/.env" > /dev/null 2>&1
     echo -e "\e[1;32m - install_snipeit() finished"
+    /usr/bin/logger 'install_snipeit() finished' -t 'snipeit-2022-01-10';
 }
 
 set_hosts () {
+    /usr/bin/logger 'set_hosts()' -t 'snipeit-2022-01-10';
     echo -e "\e[1;32m - set_hosts()"
-    echo -e "\e[1;36m ... Setting up hosts file.\e[0m"
+    echo -e "\e[1;36m ... setting up hosts file.\e[0m"
     echo >> /etc/hosts "127.0.0.1 $(hostname) $fqdn"
     echo -e "\e[1;32m - set_hosts() finished"
+    /usr/bin/logger 'set_hosts() finished' -t 'snipeit-2022-01-10';
 }
 
 rename_default_vhost() {
+    /usr/bin/logger 'rename_default_vhost()' -t 'snipeit-2022-01-10';
     echo -e "\e[1;32m - rename_default_vhost()"
     echo -e "\e[1;36m ... enabling $APP_NAME site.\e[0m"
     mv /etc/apache2/sites-enabled/000-default.conf /etc/apache2/sites-enabled/111-default.conf > /dev/null 2>&1
     mv /etc/apache2/sites-enabled/snipeit.conf /etc/apache2/sites-enabled/000-snipeit.conf > /dev/null 2>&1
     echo -e "\e[1;32m - rename_default_vhost() finished"
+    /usr/bin/logger 'rename_default_vhost() finished' -t 'snipeit-2022-01-10';
 }
 
 configure_permissions() {
@@ -617,13 +641,15 @@ configure_permissions() {
     #            mtucker6784@gmail.com                   #
     ######################################################
     
+    /usr/bin/logger 'configure_permissions()' -t 'snipeit-2022-01-10';
     echo -e "\e[1;32m - configure_permissions()"
-    echo -e "\e[1;36m ... Setting permissions.\e[0m"
+    echo -e "\e[1;36m ... setting permissions.\e[0m"
     for chmod_dir in "$APP_PATH/storage" "$APP_PATH/public/uploads"; do
         chmod -R 775 "$chmod_dir" > /dev/null 2>&1
     done
     chown -R "$APP_USER":"$apache_group" "$APP_PATH" > /dev/null 2>&1
     echo -e "\e[1;32m - configure_permissions()"
+    /usr/bin/logger 'configure_permissions() finished' -t 'snipeit-2022-01-10';
 }
 
 run_composer() {
@@ -634,22 +660,24 @@ run_composer() {
     #            mtucker6784@gmail.com                   #
     ######################################################
     
+    /usr/bin/logger 'run_composer()' -t 'snipeit-2022-01-10';
     echo -e "\e[1;32m - run_composer()"
-    echo -e "\e[1;36m ... Running composer."
+    echo -e "\e[1;36m ... running composer."
     # We specify the path to composer because CentOS lacks /usr/local/bin in $PATH when using sudo
     sudo -i -u $APP_USER /usr/local/bin/composer install --no-dev --prefer-source --working-dir "$APP_PATH" > /dev/null 2>&1
 
     sudo chgrp -R "$apache_group" "$APP_PATH/vendor" > /dev/null 2>&1
 
-    echo -e "\e[1;36m ... Generating the application key.\e[0m"
+    echo -e "\e[1;36m ... generating the application key.\e[0m"
     php $APP_PATH/artisan key:generate --force > /dev/null 2>&1
 
-    echo -e "\e[1;36m ... Artisan Migrate.\e[0m"
+    echo -e "\e[1;36m ... artisan Migrate.\e[0m"
     php $APP_PATH/artisan migrate --force > /dev/null 2>&1
 
-    echo -e "\e[1;36m ... Creating scheduler cron.\e[0m"
-    (crontab -l ; echo "* * * * * /usr/bin/php $APP_PATH/artisan schedule:run >> /dev/null 2>&1") | crontab - > /dev/null 2>&1
+    echo -e "\e[1;36m ... creating scheduler cron.\e[0m"
+    (crontab -l ; echo "* * * * * /usr/bin/php $APP_PATH/artisan schedule:run >> /dev/null 2>&1") | crontab -
     echo -e "\e[1;32m - run_composer() finished"
+    /usr/bin/logger 'run_composer() finished' -t 'snipeit-2022-01-10';
 }
 
 ##################################################################################################################
@@ -662,16 +690,16 @@ main() {
     # OS Version
     # freedesktop.org and systemd
     . /etc/os-release
-    OS=$NAME
-    VER=$VERSION_ID
-    codename=$VERSION_CODENAME
-    readonly installedFILE="/snipeit_Installed";
-
+    readonly OPERATING_SYSTEM=$NAME
+    readonly VER=$VERSION_ID
+    readonly codename=$VERSION_CODENAME
     # Snipe-IT App specific variables
     readonly APP_USER="snipeitapp"
     readonly APP_NAME="snipeit"
     readonly APP_PATH="/var/www/html/$APP_NAME"
     readonly mysqluserpw="$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c16; echo)"
+    readonly installedFILE="$APP_PATH/snipeit_installed";
+    readonly mailconfigFILE="$APP_PATH/snipeit_mail"
 
     # Apache settings
     readonly APACHE_LOG_DIR=/var/log/apache2;
@@ -679,8 +707,11 @@ main() {
     readonly APACHE_CERTS_DIR=$APACHE_DIR/certs
     readonly apache_group=www-data
 
-    if ! [ -f $installedFILE ];
+    if ! [ -f $installedFILE -a -f $mailconfigFILE ];
     then
+        /usr/bin/logger "Starting installation. Operating System $OPERATING_SYSTEM $VER $codename" -t 'snipeit-2022-01-10';
+        echo -e "\e[1;32m - starting Snipe-IT installation on $HOSTNAME "
+        echo -e "\e[1;36m ... operating System $OPERATING_SYSTEM $VER $codename\e[0m";
         # install all required elements and generate certificates for webserver
         install_prerequisites;
         prepare_nix;
@@ -700,6 +731,7 @@ main() {
         # 'DNS:' entries accordingly. Please note: all DNS names must
         # resolve to the same IP address as the fqdn.
         readonly ALTNAMES=DNS:$HOSTNAME   # , DNS:bar.example.org , DNS:www.foo.example.org
+        # Reveal OS, Version, and codename
         generate_certificates;
         install_snipeit;
         configure_permissions;
@@ -709,27 +741,37 @@ main() {
         rename_default_vhost;
         # Securing mariadb       
         mariadb_secure_installation;
-        # Configuration of mail server require user input, so not working well with Vagrant
-#        configure_mail_server;
+        # Configuration of mail server require user input, so not working with Vagrant
+        #configure_mail_server;
         configure_permissions;
         show_databases;
         check_services;
-        /usr/bin/logger 'snipeit Installation complete' -t 'snipeit-2022-01-05';
+        /usr/bin/logger 'snipeit Installation complete' -t 'snipeit-2022-01-10';
         echo -e;
-        touch /snipeit_Installed;
+        touch $installedFILE;
         echo -e "\e[1;32msnipeit Installation complete\e[0m";
-        echo -e "\e[1;32m  ***Open http://$fqdn to login to Snipe-IT.***\e[0m"
+        echo -e "\e[1;32m  *** Browse to \e[1;33mhttps://$fqdn \e[1;32mto login to Snipe-IT. ***\e[0m"
         echo -e "\e[1;32m* Cleaning up...\e[0m"
-        rm -f snipeit.sh > /dev/null 2>&1
-        rm -f install-snipe.sh > /dev/null 2>&1
-        echo -e "\e[1;32m - Installation complete, now go to https://$HOSTNAME/\e[0m"
     else
-        echo -e "\e[1;31m---------------------------------------------------------------------\e[0m";
+        echo -e "\e[1;31m-------------------------------------------------------------------------------\e[0m";
         echo -e "\e[1;31m   It appears that snipeit Asset Server has already been installed\e[0m"
-        echo -e "\e[1;31m   If this is in error, or you just want to install again, then\e[0m"
-        echo -e "\e[1;31m   delete the file /snipeit_Installed and run the script again\e[0m"
-        echo -e "\e[1;31m---------------------------------------------------------------------\e[0m";
+        echo -e "\e[1;31m   If this is in error, or you just want to install again, then delete the\e[0m"
+        echo -e "\e[1;31m   files $installedFILE and $mailconfigfile & run this script again\e[0m"
+        echo -e "\e[1;31m-------------------------------------------------------------------------------\e[0m";
     fi
+
+    if [ -f $installedFILE -a ! -f $mailconfigFILE ];
+    then
+        echo -e "\e[1;31m-------------------------------------------------------------------------------\e[0m";
+        echo -e "\e[1;31m   SnipeIT Asset Management Server has been installed, but mail not configured.\e[0m"
+        echo -e "\e[1;31m           Please run the configure-mail.sh script to do this\e[0m"
+        echo -e "\e[1;31m       If this install was based on Vagrant, remember to run the script\e[0m"
+        echo -e "\e[1;31m        on the virtual guest $HOSTNAME, not on the Virtual Host Server\e[0m"
+        echo -e "\e[1;31m--------------------------------------------------------------------------------\e[0m";
+    fi
+
+    rm -f install-snipe.sh > /dev/null 2>&1
+    echo -e "\e[1;32m - Installation complete.\e[0m"
 }
 
 main;

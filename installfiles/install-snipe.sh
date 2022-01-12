@@ -98,10 +98,10 @@ __EOF__
     sync;
     # generate Certificate Signing Request to send to corp PKI
     echo -e "\e[1;36m ... generating csr and private key\e[0m";
-    openssl req -new -config openssl.cnf -keyout $APACHE_CERTS_DIR/$HOSTNAME.key -out $APACHE_CERTS_DIR/$fqdn.csr > /dev/null 2>&1
+    openssl req -new -config openssl.cnf -keyout $APACHE_CERTS_DIR/$fqdn.key -out $APACHE_CERTS_DIR/$fqdn.csr > /dev/null 2>&1
     # generate self-signed certificate (remove when CSR can be sent to Corp PKI)
     echo -e "\e[1;36m ... generating self signed certificate\e[0m";
-    openssl x509 -in $APACHE_CERTS_DIR/$HOSTNAME.csr -out $APACHE_CERTS_DIR/$HOSTNAME.crt -req -signkey $APACHE_CERTS_DIR/$fqdn.key -days 365 > /dev/null 2>&1
+    openssl x509 -in $APACHE_CERTS_DIR/$fqdn.csr -out $APACHE_CERTS_DIR/$fqdn.crt -req -signkey $APACHE_CERTS_DIR/$fqdn.key -days 365 > /dev/null 2>&1
     chmod 600 $APACHE_CERTS_DIR/$fqdn.key > /dev/null 2>&1
     echo -e "\e[1;32m - generate_certificates finished"
     /usr/bin/logger 'generate_certificates() finished' -t 'snipeit-2022-01-10';
@@ -143,7 +143,7 @@ configure_apache() {
     /usr/bin/logger 'configure_apache()' -t 'snipeit-2022-01-10';
     echo -e "\e[1;32m - configure_apache()"
     # Change ROOTCA to point to correct cert when/if not using self signed cert.
-    export ROOTCA=$HOSTNAME
+    export ROOTCA=$fqdn
     # Enable Apache modules required
     echo -e "\e[1;36m ... adding additional apache modules\e[0m";
     a2enmod rewrite ssl headers > /dev/null 2>&1;

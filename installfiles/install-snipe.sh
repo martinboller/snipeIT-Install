@@ -98,11 +98,11 @@ __EOF__
     sync;
     # generate Certificate Signing Request to send to corp PKI
     echo -e "\e[1;36m ... generating csr and private key\e[0m";
-    openssl req -new -config openssl.cnf -keyout $APACHE_CERTS_DIR/$HOSTNAME.key -out $APACHE_CERTS_DIR/$HOSTNAME.csr > /dev/null 2>&1
+    openssl req -new -config openssl.cnf -keyout $APACHE_CERTS_DIR/$HOSTNAME.key -out $APACHE_CERTS_DIR/$fqdn.csr > /dev/null 2>&1
     # generate self-signed certificate (remove when CSR can be sent to Corp PKI)
     echo -e "\e[1;36m ... generating self signed certificate\e[0m";
-    openssl x509 -in $APACHE_CERTS_DIR/$HOSTNAME.csr -out $APACHE_CERTS_DIR/$HOSTNAME.crt -req -signkey $APACHE_CERTS_DIR/$HOSTNAME.key -days 365 > /dev/null 2>&1
-    chmod 600 $APACHE_CERTS_DIR/$HOSTNAME.key > /dev/null 2>&1
+    openssl x509 -in $APACHE_CERTS_DIR/$HOSTNAME.csr -out $APACHE_CERTS_DIR/$HOSTNAME.crt -req -signkey $APACHE_CERTS_DIR/$fqdn.key -days 365 > /dev/null 2>&1
+    chmod 600 $APACHE_CERTS_DIR/$fqdn.key > /dev/null 2>&1
     echo -e "\e[1;32m - generate_certificates finished"
     /usr/bin/logger 'generate_certificates() finished' -t 'snipeit-2022-01-10';
 }
@@ -115,8 +115,6 @@ prepare_nix() {
     BUILDDATE=$(date +%Y-%m-%d)
     cat << __EOF__ >> /etc/motd
            
-                $HOSTNAME
-
 *****************************************************        
 *      _____       _                  __________    *
 *     / ___/____  (_)___  ___        /  _/_  __/    *
@@ -129,7 +127,7 @@ prepare_nix() {
              (\__/) ||
              (•ㅅ•) ||
             /  　  づ
-         Automated install v  1.0
+         Automated install v  1.10
                 2022-01-10
 
 __EOF__
@@ -154,7 +152,7 @@ configure_apache() {
     echo -e "\e[1;36m ... generating site configuration file with TLS support\e[0m";
     cat << __EOF__ > $APACHE_DIR/sites-available/snipeit.conf;
     <VirtualHost *:80>
-        ServerName $HOSTNAME
+        ServerName $fqdn
         RewriteEngine On
         RewriteCond %{REQUEST_URI} !^/\.well\-known/acme\-challenge/
         RewriteRule ^/?(.*) https://%{SERVER_NAME}/$1 [R,L]
@@ -167,7 +165,7 @@ configure_apache() {
             Options -Indexes
         </Directory>
 
-        ServerName $HOSTNAME
+        ServerName $fqdn
         DocumentRoot $APP_PATH/public
         ErrorLog ${APACHE_LOG_DIR}/error.log
         CustomLog ${APACHE_LOG_DIR}/access.log combined

@@ -127,7 +127,7 @@ main() {
         echo -e "\e[1;31m---------------------------------------------------------------------\e[0m";
         echo -e "\e[1;31m   It appears that snipeit Asset Server has already been setup\e[0m"
         echo -e "\e[1;31m   and mail configured on the server. If this is in error\e[0m"
-        echo -e "\e[1;31m   delete the file /snipeit_mail and run this script again\e[0m"
+        echo -e "\e[1;31m   delete the file $mailconfigFILE and run this script again\e[0m"
         echo -e "\e[1;31m---------------------------------------------------------------------\e[0m";
     fi
 

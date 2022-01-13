@@ -107,9 +107,40 @@ __EOF__
     /usr/bin/logger 'generate_certificates() finished' -t 'snipeit-2022-01-10';
 }
 
+letsencrypt_certificates() {
+    /usr/bin/logger 'letsencrypt_certificates()' -t 'snipeit-2022-01-10';
+    echo -e "\e[1;32m - letsencrypt_certificates()"
+    echo -e "\e[1;36m ... installing certbot\e[0m";
+    apt-get -y -qq install certbot python3-certbot-apache > /dev/null 2>&1
+    sync;
+
+    # Start certbot'ing
+    echo -e "\e[1;36m ... running certbot\e[0m";
+    certbot run -n --agree-tos --apache -m $mailaddress --domains $fqdn
+
+    echo -e "\e[1;36m ... creating cron job for renewal of certificates\e[0m";
+        cat << __EOF__ > /etc/cron.weekly/certbot
+#!/bin/sh
+/usr/bin/certbot renew
+__EOF__
+    chmod 755 /etc/cron.weekly/certbot > /dev/null 2>&1
+    echo -e "\e[1;32m - letsencrypt_certificates() finished"
+    /usr/bin/logger 'letsencrypt_certificates() finished' -t 'snipeit-2022-01-10';
+}
+
 prepare_nix() {
     /usr/bin/logger 'prepare_nix()' -t 'gse-21.4';
     echo -e "\e[1;32m - prepare_nix"
+
+    echo -e "\e[1;36m ... creating some permanent variables for Snipe-IT\e[0m";    
+     # Update Snipe-IT environment variables
+    cat << __EOF__ > /etc/profile.d/snipeitvars.sh
+export APP_USER="snipeitapp"
+export APP_NAME="snipeit"
+export APP_PATH="/var/www/html/$APP_NAME"
+__EOF__
+    chmod 744 /etc/profile.d/snipeitvars.sh
+
     echo -e "\e[1;36m ... generating motd file\e[0m";    
     # Configure MOTD
     BUILDDATE=$(date +%Y-%m-%d)
@@ -594,7 +625,7 @@ install_snipeit () {
     echo -e "\e[1;36m ... create databases.\e[0m"
     mysql -u root --execute="CREATE DATABASE snipeit;GRANT ALL PRIVILEGES ON snipeit.* TO snipeit@localhost IDENTIFIED BY '$mysqluserpw';" > /dev/null 2>&1
 
-    echo -e "\e[1;36m ... cloning Snipe-IT from github to \e[1;33m$APP_PATH.\e[0m"
+    echo -e "\e[1;36m ... cloning Snipe-IT from github to $APP_PATH.\e[0m"
     git clone --quiet https://github.com/snipe/snipe-it $APP_PATH > /dev/null 2>&1
 
     echo -e "\e[1;36m ... configuring the $APP_NAME $APP_PATH/.env file.\e[0m"
@@ -682,6 +713,7 @@ install_pip_snipeit() {
     /usr/bin/logger 'install_pip_snipeit()' -t 'snipeit-2022-01-10';
     echo -e "\e[1;32m - install_pip_snipeit()"
     echo -e "\e[1;36m ... installing python pip module for Snipe-IT as $APP_USER.\e[0m"
+    # https://github.com/jbloomer/SnipeIT-PythonAPI.git
     sudo -i -u $APP_USER python3 -m pip install snipeit
     echo -e "\e[1;32m - install_pip_snipeit() finished"
     /usr/bin/logger 'install_pip_snipeit() finished' -t 'snipeit-2022-01-10';
@@ -694,6 +726,11 @@ install_pip_snipeit() {
 main() {
     /usr/bin/logger 'Installing snipeit.......' -t 'snipeit';
     # Setting global vars
+    # Change the mailaddress below to reflect your mail-address
+    readonly mailaddress="noc@bollers.dk"
+    # CERT_TYPE can be Self-Signed or LetsEncrypt
+    readonly CERT_TYPE="Self-Signed"
+    readonly fqdn="$(hostname --fqdn)"
     # OS Version
     # freedesktop.org and systemd
     . /etc/os-release
@@ -728,7 +765,6 @@ main() {
         # (see also https://www.switch.ch/pki/participants/)
         readonly ORGNAME=snipeit_server
         # the fully qualified server (or service) name, change if other servicename than hostname
-        readonly fqdn="$(hostname --fqdn)"
         # Local information
         readonly ISOCOUNTRY=DK;
         readonly PROVINCE=Denmark;
@@ -739,13 +775,27 @@ main() {
         # resolve to the same IP address as the fqdn.
         readonly ALTNAMES=DNS:$HOSTNAME   # , DNS:bar.example.org , DNS:www.foo.example.org
         # Reveal OS, Version, and codename
-        generate_certificates;
         install_snipeit;
         configure_permissions;
         install_composer;
         run_composer;
         configure_apache;
         rename_default_vhost;
+
+        # Either generate a CSR and use with internal CA, create a self-signed certificate if you are running an internal test server
+        # Or Use Lets Encrypt if this is a public server.
+        # Configure CERT_TYPE above
+        case $CERT_TYPE in
+        Self-Signed) 
+            echo -e "\e[1;36m ... generating $CERT_SERVER certificate\e[0m"
+            generate_certificates
+            ;;
+        LetsEncrypt)
+            echo -e "\e[1;36m ... generating $CERT_SERVER certificate\e[0m"
+            letsencrypt_certificates
+            ;;
+        esac
+
         # Securing mariadb       
         mariadb_secure_installation;
         # Configuration of mail server require user input, so not working with Vagrant

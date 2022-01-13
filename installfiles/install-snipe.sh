@@ -744,7 +744,20 @@ main() {
     readonly mysqluserpw="$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c16; echo)"
     readonly installedFILE="$APP_PATH/snipeit_installed";
     readonly mailconfigFILE="$APP_PATH/snipeit_mail"
-
+    ## Variables required for certificate
+    # organization name
+    # (see also https://www.switch.ch/pki/participants/)
+    readonly ORGNAME=snipeit_server
+    # the fully qualified server (or service) name, change if other servicename than hostname
+    # Local information
+    readonly ISOCOUNTRY=DK;
+    readonly PROVINCE=Denmark;
+    readonly LOCALITY=Copenhagen
+    # subjectAltName entries: to add DNS aliases to the CSR, delete
+    # the '#' character in the ALTNAMES line, and change the subsequent
+    # 'DNS:' entries accordingly. Please note: all DNS names must
+    # resolve to the same IP address as the fqdn.
+    readonly ALTNAMES=DNS:$HOSTNAME   # , DNS:bar.example.org , DNS:www.foo.example.org
     # Apache settings
     readonly APACHE_LOG_DIR=/var/log/apache2;
     readonly APACHE_DIR=/etc/apache2
@@ -755,26 +768,13 @@ main() {
     then
         /usr/bin/logger "Starting installation. Operating System $OPERATING_SYSTEM $VER $codename" -t 'snipeit-2022-01-10';
         echo -e "\e[1;32m - starting Snipe-IT installation on $HOSTNAME "
+        # Reveal OS, Version, and codename
         echo -e "\e[1;36m ... operating System $OPERATING_SYSTEM $VER $codename\e[0m";
         # install all required elements and generate certificates for webserver
         install_prerequisites;
         prepare_nix;
         create_user;
-        ## Variables required for certificate
-        # organization name
-        # (see also https://www.switch.ch/pki/participants/)
-        readonly ORGNAME=snipeit_server
-        # the fully qualified server (or service) name, change if other servicename than hostname
-        # Local information
-        readonly ISOCOUNTRY=DK;
-        readonly PROVINCE=Denmark;
-        readonly LOCALITY=Copenhagen
-        # subjectAltName entries: to add DNS aliases to the CSR, delete
-        # the '#' character in the ALTNAMES line, and change the subsequent
-        # 'DNS:' entries accordingly. Please note: all DNS names must
-        # resolve to the same IP address as the fqdn.
-        readonly ALTNAMES=DNS:$HOSTNAME   # , DNS:bar.example.org , DNS:www.foo.example.org
-        # Reveal OS, Version, and codename
+
         install_snipeit;
         configure_permissions;
         install_composer;

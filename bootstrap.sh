@@ -90,11 +90,12 @@ main() {
   echo -e "\e[32m - bootstrap main()\e[0m";
   clear
   #change domain below
-  #readonly DOMAINNAME=bollers.dk;
+  readonly DOMAINNAME=bollers.dk;
+  readonly fqdn="$HOSTNAME.$DOMAINNAME"
   # Do not forget to remove my test public key and add your own public SSH Key(s) below
   readonly PublicSSHKey="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIHJYsxpawSLfmIAZTPWdWe2xLAH758JjNs5/Z2pPWYm"
   /usr/bin/logger '!!!!! Main routine starting' -t 'snipeit';
-  #hostnamectl set-hostname $HOSTNAME.$DOMAINNAME > /dev/null 2>&1;
+  hostnamectl set-hostname $fqdn > /dev/null 2>&1;
   public_ssh_keys;
   configure_timezone;
   bootstrap_prerequisites;

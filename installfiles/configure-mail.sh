@@ -120,7 +120,7 @@ main() {
         /usr/bin/logger 'mail configuration complete' -t 'snipeit-2022-01-10';
         echo -e;
         echo -e "\e[1;32m - snipeit mail configuration complete\e[0m";
-        echo -e "\e[1;32m  *** Browse to \e[1;33mhttps://$fqdn \e[1;32m and configure Snipe-IT. ***\e[0m"
+        echo -e "\e[1;32m  *** Browse to \e[1;33mhttps://$fqdn \e[1;32mto login to Snipe-IT. ***\e[0m"
         echo -e "\e[1;32m* Cleaning up...\e[0m"
         rm -f configure-mail.sh > /dev/null 2>&1
     else

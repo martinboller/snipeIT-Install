@@ -138,6 +138,7 @@ prepare_nix() {
 export APP_USER="snipeitapp"
 export APP_NAME="snipeit"
 export APP_PATH="/var/www/html/$APP_NAME"
+export APP_CONFIG_PATH="$APP_PATH/.env"
 __EOF__
     chmod 744 /etc/profile.d/snipeitvars.sh
 
@@ -731,6 +732,7 @@ main() {
     # CERT_TYPE can be Self-Signed or LetsEncrypt
     readonly CERT_TYPE="Self-Signed"
     readonly fqdn="$(hostname --fqdn)"
+    readonly HOSTNAME_ONLY="$(hostname --short)"
     # OS Version
     # freedesktop.org and systemd
     . /etc/os-release
@@ -757,7 +759,7 @@ main() {
     # the '#' character in the ALTNAMES line, and change the subsequent
     # 'DNS:' entries accordingly. Please note: all DNS names must
     # resolve to the same IP address as the fqdn.
-    readonly ALTNAMES=DNS:$HOSTNAME   # , DNS:bar.example.org , DNS:www.foo.example.org
+    readonly ALTNAMES=DNS:$HOSTNAME_ONLY # , DNS:bar.example.org , DNS:www.foo.example.org
     # Apache settings
     readonly APACHE_LOG_DIR=/var/log/apache2;
     readonly APACHE_DIR=/etc/apache2
@@ -767,7 +769,7 @@ main() {
     if ! [ -f $installedFILE -a -f $mailconfigFILE ];
     then
         /usr/bin/logger "Starting installation. Operating System $OPERATING_SYSTEM $VER $codename" -t 'snipeit-2022-01-10';
-        echo -e "\e[1;32m - starting Snipe-IT installation on $HOSTNAME "
+        echo -e "\e[1;32m - starting Snipe-IT installation on $fqdn"
         # Reveal OS, Version, and codename
         echo -e "\e[1;36m ... operating System $OPERATING_SYSTEM $VER $codename\e[0m";
         # install all required elements and generate certificates for webserver
@@ -824,7 +826,7 @@ main() {
         echo -e "\e[1;31m   SnipeIT Asset Management Server has been installed, but mail not configured.\e[0m"
         echo -e "\e[1;31m           Please run the configure-mail.sh script to do this\e[0m"
         echo -e "\e[1;31m       If this install was based on Vagrant, remember to run the script\e[0m"
-        echo -e "\e[1;31m        on the virtual guest $HOSTNAME, not on the Virtual Host Server\e[0m"
+        echo -e "\e[1;31m        on the virtual guest $fqdn, not on the Virtual Host Server\e[0m"
         echo -e "\e[1;31m--------------------------------------------------------------------------------\e[0m";
     fi
 

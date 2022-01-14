@@ -41,11 +41,13 @@ install_prerequisites() {
     apt-get -qq -y install --fix-policy > /dev/null 2>&1;
     apt-get -qq -y install adduser wget whois unzip curl gnupg2 software-properties-common dnsutils python3 python3-pip > /dev/null 2>&1;
 
-    echo -e "\e[1;36m ... installing MariaDB, Apache Web Server, PHP, and other required packages\e[0m" 
-    #apt-get -qq -y install mariadb-server mariadb-client apache2 libapache2-mod-php7.4 php7.4 php7.4-mcrypt php7.4-curl \
-    #    php7.4-mysql php7.4-gd php7.4-ldap php7.4-zip php7.4-mbstring php7.4-xml php7.4-bcmath curl git unzip > /dev/null 2>&1
-    apt-get -qq -y install mariadb-server mariadb-client apache2 libapache2-mod-php php php-mcrypt php-curl \
-        php-mysql php-gd php-ldap php-zip php-mbstring php-xml php-bcmath curl git unzip > /dev/null 2>&1
+    echo -e "\e[1;36m ... installing MariaDB, Apache Web Server, and other required packages\e[0m" 
+    apt-get -qq -y install mariadb-server mariadb-client apache2 apache2-utils curl git unzip > /dev/null 2>&1
+    echo -e "\e[1;36m ... installing PHP packages needed\e[0m" 
+    apt-get -qq -y install libapache2-mod-php7.4 php7.4 php7.4-mcrypt php7.4-curl php7.4-mysql php7.4-gd php7.4-ldap php7.4-zip php7.4-mbstring php7.4-xml php7.4-bcmath > /dev/null 2>&1
+    # composer check-platform-reqs throws an error with php 8.x as it is currently only checking for 6.x or 7.x
+    # Thus reverted back to installing 7.4 (see above)
+    #apt-get -qq -y install libapache2-mod-php php php-mcrypt php-curl php-mysql php-gd php-ldap php-zip php-mbstring php-xml php-bcmath > /dev/null 2>&1
     # Some additional libraries for php-gd
     apt-get -qq -y install libpng-dev libjpeg-dev libwebp-dev libgd2-xpm-dev* > /dev/null 2>&1
     # Set locale
@@ -110,7 +112,8 @@ __EOF__
 letsencrypt_certificates() {
     /usr/bin/logger 'letsencrypt_certificates()' -t 'snipeit-2022-01-10';
     echo -e "\e[1;32m - letsencrypt_certificates()"
-    echo -e "\e[1;36m ... installing certbot\e[0m";
+
+     echo -e "\e[1;36m ... installing certbot\e[0m";
     apt-get -y -qq install certbot python3-certbot-apache > /dev/null 2>&1
     sync;
 
@@ -118,7 +121,7 @@ letsencrypt_certificates() {
     echo -e "\e[1;36m ... running certbot\e[0m";
     certbot run -n --agree-tos --apache -m $mailaddress --domains $fqdn
 
-    echo -e "\e[1;36m ... creating cron job for renewal of certificates\e[0m";
+    echo -e "\e[1;36m ... creating cron job for automatic renewal of certificates\e[0m";
         cat << __EOF__ > /etc/cron.weekly/certbot
 #!/bin/sh
 /usr/bin/certbot renew
@@ -787,11 +790,9 @@ main() {
         # Either generate a CSR and use with internal CA, create a self-signed certificate if you are running an internal test server
         # Or Use Lets Encrypt if this is a public server.
         # Configure CERT_TYPE above
+        echo -e "\e[1;36m ... generating $CERT_SERVER certificate\e[0m"
+        generate_certificates
         case $CERT_TYPE in
-        Self-Signed) 
-            echo -e "\e[1;36m ... generating $CERT_SERVER certificate\e[0m"
-            generate_certificates
-            ;;
         LetsEncrypt)
             echo -e "\e[1;36m ... generating $CERT_SERVER certificate\e[0m"
             letsencrypt_certificates

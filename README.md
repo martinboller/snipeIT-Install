@@ -3,7 +3,7 @@
 ### Bash script automating the installation of Snipe-IT Open Source Asset Management on Debian 11
 Most of the Snipe-IT specific details, shamelessly lifted from the installation scripts created by Mike Tucker mtucker6784@gmail.com
 
-<img src="./images/snipe-it-logo-xs.png" alt="Update in progress, top"/>
+<img src="./images/snipe-it-logo-xs.png" alt="https://snipeitapp.com/"/>
 
 ## Vagrantfile and bootstrap.sh for use with Vagrant and Virtualbox
 

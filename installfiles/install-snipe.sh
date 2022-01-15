@@ -412,6 +412,7 @@ check_services() {
     echo -e "\e[1;36m ... restarting MariaDB\e[0m";
     systemctl restart mariadb.service  > /dev/null 2>&1
     echo -e "\e[1;36m ... restarting Apache Web Server\e[0m";
+    #systemctl reload apache2.service  > /dev/null 2>&1
     systemctl restart apache2.service  > /dev/null 2>&1
     echo -e "\e[1;32m-----------------------------------------------------------------\e[0m";
     echo -e "\e[1;32m - Checking core daemons for Snipe-IT......\e[0m";

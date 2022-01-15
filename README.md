@@ -5,6 +5,10 @@ Most of the Snipe-IT specific details, shamelessly lifted from the installation 
 
 <img src="./images/snipe-it-logo-xs.png" alt="https://snipeitapp.com/"/>
 
+
+For more information about the awesome Snipe Asset Management Solution, go to https://snipeitapp.com/
+
+
 ## Vagrantfile and bootstrap.sh for use with Vagrant and Virtualbox
 
 ### Known issues:

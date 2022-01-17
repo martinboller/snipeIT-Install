@@ -724,6 +724,36 @@ install_pip_snipeit() {
     /usr/bin/logger 'install_pip_snipeit() finished' -t 'snipeit-2022-01-10';
 }
 
+install_crowdsec() {
+    /usr/bin/logger 'install_crowdsec()' -t 'Debian-FW-20211210';
+    # Add repo
+    curl -s https://packagecloud.io/install/repositories/crowdsec/crowdsec/script.deb.sh | sudo bash;
+    #install crowdsec core daemon
+    apt-get -y install crowdsec;
+    # install firewall bouncer
+    apt-get -y install crowdsec-firewall-bouncer-iptables;
+    /usr/bin/logger 'install_crowdsec() finished' -t 'Debian-FW-20211210';
+}
+
+configure_crowdsec() {
+    /usr/bin/logger 'configure_crowdsec()' -t 'Debian-FW-20211210';
+    # Collection iptables
+    cscli parsers install crowdsecurity/iptables-logs;
+    cscli parsers install crowdsecurity/geoip-enrich;
+    cscli scenarios install crowdsecurity/iptables-scan-multi_ports;
+    cscli scenarios install crowdsecurity/ssh-bf;
+    cscli collections install crowdsecurity/mysql;
+    cscli collections install crowdsecurity/linux;
+    cscli collections install crowdsecurity/iptables;
+    cscli postoverflows install crowdsecurity/rdns;
+    # Running 'sudo systemctl reload crowdsec' for the new configuration to be effective.
+    systemctl reload crowdsec.service;
+    # Enable auto complete for BASH
+    source /etc/profile;
+    source <(cscli completion bash);
+    /usr/bin/logger 'configure_crowdsec() finished' -t 'Debian-FW-20211210';
+}
+
 ##################################################################################################################
 ## Main                                                                                                          #
 ##################################################################################################################
@@ -733,7 +763,7 @@ main() {
     # Setting global vars
     # Change the mailaddress below to reflect your mail-address
     readonly mailaddress="noc@bollers.dk"
-    # CERT_TYPE can be Self-Signed or LetsEncrypt
+    # CERT_TYPE can be Self-Signed or LetsEncrypt (internet connected, thus also installing crowdsec)
     readonly CERT_TYPE="Self-Signed"
     readonly fqdn="$(hostname --fqdn)"
     readonly HOSTNAME_ONLY="$(hostname --short)"
@@ -770,6 +800,7 @@ main() {
     readonly APACHE_CERTS_DIR=$APACHE_DIR/certs
     readonly apache_group=www-data
 
+    # Crowdsec to provide some additional awesome security for internet connected systems
     if ! [ -f $installedFILE -a -f $mailconfigFILE ];
     then
         /usr/bin/logger "Starting installation. Operating System $OPERATING_SYSTEM $VER $codename" -t 'snipeit-2022-01-10';
@@ -797,6 +828,8 @@ main() {
         LetsEncrypt)
             echo -e "\e[1;36m ... generating $CERT_SERVER certificate\e[0m"
             letsencrypt_certificates
+            install_crowdsec;
+            configure_crowdsec;
             ;;
         esac
 

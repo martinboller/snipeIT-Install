@@ -754,6 +754,46 @@ configure_crowdsec() {
     /usr/bin/logger 'configure_crowdsec() finished' -t 'Debian-FW-20211210';
 }
 
+configure_reverse_proxy() {
+    /usr/bin/logger 'configure_reverse_proxy()' -t 'snipeit-2022-01-10';
+    echo -e "\e[1;32m - configure_reverse_proxy()\e[0m"
+    # Setting up reverse proxy config
+
+    ######################################################
+    #        Modified from the Snipe-It Install          #
+    #          Script created by Mike Tucker             #
+    #             Modified by Ryan Brooks                #
+    ######################################################
+    
+    setupproxy=default
+    until [[ $setupproxy == "yes" ]] || [[ $setupproxy == "no" ]]; do
+    echo -e "\e[1;32m"
+    echo -n "  Q. Do you want to configure reverse proxy settings? (y/n) "
+    read -r setupproxy
+
+    case $setupproxy in
+    [yY] | [yY][Ee][Ss] )
+        # Reverse proxy details
+        # Server address or name
+        echo -n " - IP address of the reverse proxy: "
+        read -r proxyaddress
+        sed -i "s|^\\(APP_TRUSTED_PROXIES=\\).*|\\1$proxyaddress|" "$APP_PATH/.env"
+        # Create file to indicate reverse proxy is configured
+        touch $proxyconfigFILE;
+        setupproxy="yes"
+        ;;
+    [nN] | [n|N][O|o] )
+        setupproxy="no"
+        ;;
+    *)  echo -e "\e[1;31m - Invalid answer. Please type y or n\e[0m"
+        ;;
+    esac
+    done
+    echo -e "\e[0m"
+    /usr/bin/logger 'configure_reverse_proxy() finished' -t 'snipeit-2022-01-10';
+    echo -e "\e[1;32m - configure_reverse_proxy() finished\e[0m"
+}
+
 ##################################################################################################################
 ## Main                                                                                                          #
 ##################################################################################################################
@@ -761,11 +801,14 @@ configure_crowdsec() {
 main() {
     /usr/bin/logger 'Installing snipeit.......' -t 'snipeit';
     # Setting global vars
-    # Change the mailaddress below to reflect your mail-address
-    readonly mailaddress="noc@bollers.dk"
+    #Prompt for email address instead of using a hardcoded address
+    echo "Please enter your email address: "
+    read mailaddress
     # CERT_TYPE can be Self-Signed or LetsEncrypt (internet connected, thus also installing crowdsec)
     readonly CERT_TYPE="Self-Signed"
-    readonly fqdn="$(hostname --fqdn)"
+    #Prompt for FQDN
+    echo "Please enter the FQDN this application will be available at (such as snipeit.example.com):"
+    read fqdn
     readonly HOSTNAME_ONLY="$(hostname --short)"
     # OS Version
     # freedesktop.org and systemd
@@ -837,6 +880,7 @@ main() {
         mariadb_secure_installation;
         # Configuration of mail server require user input, so not working with Vagrant
         #configure_mail_server;
+        configure_reverse_proxy;
         configure_permissions;
         install_pip_snipeit;
         show_databases;

@@ -185,7 +185,18 @@ configure_apache() {
     echo -e "\e[1;36m ... enabling $APP_NAME site\e[0m";
     # TLS
     echo -e "\e[1;36m ... generating site configuration file with TLS support\e[0m";
-    cat << __EOF__ > $APACHE_DIR/sites-available/snipeit.conf;
+
+    # Disabling TLSv1.2 breaks some reverse proxies, such as the popular NGINX Reverse Proxy.  Ask the user if they wish to disable TLSv1.2, and modify the Apache configuation we're setting appropriately.
+    # I know there are better ways to do this but I've been troubleshooting this issue for a while and I just want it to work now.
+    tls1dot2=default
+    until [[ $tls1dot2 == "yes" ]] || [[ $tls1dot2 == "no" ]]; do
+    echo -e "\e[1;32m"
+    echo -n "  Q. Do you want to disable TLSv1.2? It is more secure, but may interfere with reverse proxies.  If you are using a reverse proxy, you may want to select no; otherwise, select yes. (y/n) "
+    read -r tls1dot2
+
+    case $tls1dot2 in
+    [yY] | [yY][Ee][Ss] )
+        cat << __EOF__ > $APACHE_DIR/sites-available/snipeit.conf;
     <VirtualHost *:80>
         ServerName $fqdn
         RewriteEngine On
@@ -224,7 +235,55 @@ configure_apache() {
     SSLUseStapling On
     SSLStaplingCache "shmcb:logs/ssl_stapling(32768)"
 __EOF__
- 
+        tls1dot2="yes"
+        ;;
+    [nN] | [n|N][O|o] )
+        cat << __EOF__ > $APACHE_DIR/sites-available/snipeit.conf;
+    <VirtualHost *:80>
+        ServerName $fqdn
+        RewriteEngine On
+        RewriteCond %{REQUEST_URI} !^/\.well\-known/acme\-challenge/
+        RewriteRule ^/?(.*) https://%{SERVER_NAME}/$1 [R,L]
+    </VirtualHost>
+
+    <VirtualHost *:443>
+        <Directory $APP_PATH/public>
+            Allow From All
+            AllowOverride All
+            Options -Indexes
+        </Directory>
+
+        ServerName $fqdn
+        DocumentRoot $APP_PATH/public
+        ErrorLog ${APACHE_LOG_DIR}/error.log
+        CustomLog ${APACHE_LOG_DIR}/access.log combined
+    
+        SSLCertificateFile "$APACHE_CERTS_DIR/$fqdn.crt"
+        SSLCertificateKeyFile "$APACHE_CERTS_DIR/$fqdn.key"
+        SSLCertificateChainFile "$APACHE_CERTS_DIR/$ROOTCA.crt"
+
+        # enable HTTP/2, if available
+        Protocols h2 http/1.1
+
+        # HTTP Strict Transport Security (mod_headers is required)
+        Header always set Strict-Transport-Security "max-age=63072000"
+    </VirtualHost>
+
+    # modern configuration
+    SSLProtocol             all -SSLv3 -TLSv1 -TLSv1.1
+    SSLHonorCipherOrder     off
+    SSLSessionTickets       off
+    # Cert Stapling
+    SSLUseStapling On
+    SSLStaplingCache "shmcb:logs/ssl_stapling(32768)"
+__EOF__
+        tls1dot2="no"
+        ;;
+    *)  echo -e "\e[1;31m - Invalid answer. Please type y or n\e[0m"
+        ;;
+    esac
+    done
+
     echo -e "\e[1;36m ... turning of some apache specific header information\e[0m";
     # Turn off detail Header information
     cat << __EOF__ >> $APACHE_DIR/apache2.conf;

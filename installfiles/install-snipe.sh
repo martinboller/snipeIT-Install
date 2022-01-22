@@ -865,7 +865,7 @@ main() {
         echo -e "\e[1;31m--------------------------------------------------------------------------------\e[0m";
     fi
 
-    rm -f install-snipe.sh > /dev/null 2>&1
+    #rm -f install-snipe.sh > /dev/null 2>&1
     echo -e "\e[1;32m - Installation complete.\e[0m"
 }
 

@@ -882,6 +882,7 @@ main() {
     readonly mysqluserpw="$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c16; echo)"
     readonly installedFILE="$APP_PATH/snipeit_installed";
     readonly mailconfigFILE="$APP_PATH/snipeit_mail"
+    readonly proxyconfigFILE="$APP_PATH/snipeit_proxy"
     ## Variables required for certificate
     # organization name
     # (see also https://www.switch.ch/pki/participants/)

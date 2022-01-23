@@ -3,13 +3,16 @@
 #############################################################################
 #                                                                           #
 # Author:       Martin Boller                                               #
+#               Ryan Brooks                                                 #
 #                                                                           #
 # Email:        martin@bollers.dk                                           #
-# Last Update:  2022-01-11                                                  #
-# Version:      1.10                                                        #
+# Last Update:  2022-01-22                                                  #
+# Version:      1.11                                                        #
 #                                                                           #
 # Changes:      Initial Version (1.00)                                      #
 #               https in .env file or logo / pictures doesn't show (1.10)   #
+#               (1.11)  Fixes to support reverse proxies, added prompts     #
+#                       instead of relying on hardcoded values              #
 #                                                                           #
 # Info:         Installing Snipe-IT on Debian 11                            #
 #               Most of the work done by the install                        #
@@ -185,7 +188,18 @@ configure_apache() {
     echo -e "\e[1;36m ... enabling $APP_NAME site\e[0m";
     # TLS
     echo -e "\e[1;36m ... generating site configuration file with TLS support\e[0m";
-    cat << __EOF__ > $APACHE_DIR/sites-available/snipeit.conf;
+
+    # Disabling TLSv1.2 breaks some reverse proxies, such as the popular NGINX Reverse Proxy.  Ask the user if they wish to disable TLSv1.2, and modify the Apache configuation we're setting appropriately.
+    # I know there are better ways to do this but I've been troubleshooting this issue for a while and I just want it to work now.
+    tls1dot2=default
+    until [[ $tls1dot2 == "yes" ]] || [[ $tls1dot2 == "no" ]]; do
+    echo -e "\e[1;32m"
+    echo -n "  Q. Do you want to disable TLSv1.2? It is more secure, but may interfere with reverse proxies.  If you are using a reverse proxy, you may want to select no; otherwise, select yes. (y/n) "
+    read -r tls1dot2
+
+    case $tls1dot2 in
+    [yY] | [yY][Ee][Ss] )
+        cat << __EOF__ > $APACHE_DIR/sites-available/snipeit.conf;
     <VirtualHost *:80>
         ServerName $fqdn
         RewriteEngine On
@@ -224,7 +238,55 @@ configure_apache() {
     SSLUseStapling On
     SSLStaplingCache "shmcb:logs/ssl_stapling(32768)"
 __EOF__
- 
+        tls1dot2="yes"
+        ;;
+    [nN] | [n|N][O|o] )
+        cat << __EOF__ > $APACHE_DIR/sites-available/snipeit.conf;
+    <VirtualHost *:80>
+        ServerName $fqdn
+        RewriteEngine On
+        RewriteCond %{REQUEST_URI} !^/\.well\-known/acme\-challenge/
+        RewriteRule ^/?(.*) https://%{SERVER_NAME}/$1 [R,L]
+    </VirtualHost>
+
+    <VirtualHost *:443>
+        <Directory $APP_PATH/public>
+            Allow From All
+            AllowOverride All
+            Options -Indexes
+        </Directory>
+
+        ServerName $fqdn
+        DocumentRoot $APP_PATH/public
+        ErrorLog ${APACHE_LOG_DIR}/error.log
+        CustomLog ${APACHE_LOG_DIR}/access.log combined
+    
+        SSLCertificateFile "$APACHE_CERTS_DIR/$fqdn.crt"
+        SSLCertificateKeyFile "$APACHE_CERTS_DIR/$fqdn.key"
+        SSLCertificateChainFile "$APACHE_CERTS_DIR/$ROOTCA.crt"
+
+        # enable HTTP/2, if available
+        Protocols h2 http/1.1
+
+        # HTTP Strict Transport Security (mod_headers is required)
+        Header always set Strict-Transport-Security "max-age=63072000"
+    </VirtualHost>
+
+    # modern configuration
+    SSLProtocol             all -SSLv3 -TLSv1 -TLSv1.1
+    SSLHonorCipherOrder     off
+    SSLSessionTickets       off
+    # Cert Stapling
+    SSLUseStapling On
+    SSLStaplingCache "shmcb:logs/ssl_stapling(32768)"
+__EOF__
+        tls1dot2="no"
+        ;;
+    *)  echo -e "\e[1;31m - Invalid answer. Please type y or n\e[0m"
+        ;;
+    esac
+    done
+
     echo -e "\e[1;36m ... turning of some apache specific header information\e[0m";
     # Turn off detail Header information
     cat << __EOF__ >> $APACHE_DIR/apache2.conf;
@@ -754,6 +816,46 @@ configure_crowdsec() {
     /usr/bin/logger 'configure_crowdsec() finished' -t 'Debian-FW-20211210';
 }
 
+configure_reverse_proxy() {
+    /usr/bin/logger 'configure_reverse_proxy()' -t 'snipeit-2022-01-10';
+    echo -e "\e[1;32m - configure_reverse_proxy()\e[0m"
+    # Setting up reverse proxy config
+
+    ######################################################
+    #        Modified from the Snipe-It Install          #
+    #          Script created by Mike Tucker             #
+    #             Modified by Ryan Brooks                #
+    ######################################################
+    
+    setupproxy=default
+    until [[ $setupproxy == "yes" ]] || [[ $setupproxy == "no" ]]; do
+    echo -e "\e[1;32m"
+    echo -n "  Q. Do you want to configure reverse proxy settings? (y/n) "
+    read -r setupproxy
+
+    case $setupproxy in
+    [yY] | [yY][Ee][Ss] )
+        # Reverse proxy details
+        # Server address or name
+        echo -n " - IP address of the reverse proxy: "
+        read -r proxyaddress
+        sed -i "s|^\\(APP_TRUSTED_PROXIES=\\).*|\\1$proxyaddress|" "$APP_PATH/.env"
+        # Create file to indicate reverse proxy is configured
+        touch $proxyconfigFILE;
+        setupproxy="yes"
+        ;;
+    [nN] | [n|N][O|o] )
+        setupproxy="no"
+        ;;
+    *)  echo -e "\e[1;31m - Invalid answer. Please type y or n\e[0m"
+        ;;
+    esac
+    done
+    echo -e "\e[0m"
+    /usr/bin/logger 'configure_reverse_proxy() finished' -t 'snipeit-2022-01-10';
+    echo -e "\e[1;32m - configure_reverse_proxy() finished\e[0m"
+}
+
 ##################################################################################################################
 ## Main                                                                                                          #
 ##################################################################################################################
@@ -761,11 +863,14 @@ configure_crowdsec() {
 main() {
     /usr/bin/logger 'Installing snipeit.......' -t 'snipeit';
     # Setting global vars
-    # Change the mailaddress below to reflect your mail-address
-    readonly mailaddress="noc@bollers.dk"
+    #Prompt for email address instead of using a hardcoded address
+    echo "Please enter your email address: "
+    read mailaddress
     # CERT_TYPE can be Self-Signed or LetsEncrypt (internet connected, thus also installing crowdsec)
     readonly CERT_TYPE="Self-Signed"
-    readonly fqdn="$(hostname --fqdn)"
+    #Prompt for FQDN
+    echo "Please enter the FQDN this application will be available at (such as snipeit.example.com):"
+    read fqdn
     readonly HOSTNAME_ONLY="$(hostname --short)"
     # OS Version
     # freedesktop.org and systemd
@@ -780,6 +885,7 @@ main() {
     readonly mysqluserpw="$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c16; echo)"
     readonly installedFILE="$APP_PATH/snipeit_installed";
     readonly mailconfigFILE="$APP_PATH/snipeit_mail"
+    readonly proxyconfigFILE="$APP_PATH/snipeit_proxy"
     ## Variables required for certificate
     # organization name
     # (see also https://www.switch.ch/pki/participants/)
@@ -837,6 +943,7 @@ main() {
         mariadb_secure_installation;
         # Configuration of mail server require user input, so not working with Vagrant
         #configure_mail_server;
+        configure_reverse_proxy;
         configure_permissions;
         install_pip_snipeit;
         show_databases;
@@ -865,7 +972,7 @@ main() {
         echo -e "\e[1;31m--------------------------------------------------------------------------------\e[0m";
     fi
 
-    rm -f install-snipe.sh > /dev/null 2>&1
+    #rm -f install-snipe.sh > /dev/null 2>&1
     echo -e "\e[1;32m - Installation complete.\e[0m"
 }
 

@@ -3,13 +3,16 @@
 #############################################################################
 #                                                                           #
 # Author:       Martin Boller                                               #
+#               Ryan Brooks                                                 #
 #                                                                           #
 # Email:        martin@bollers.dk                                           #
-# Last Update:  2022-01-11                                                  #
-# Version:      1.10                                                        #
+# Last Update:  2022-01-22                                                  #
+# Version:      1.11                                                        #
 #                                                                           #
 # Changes:      Initial Version (1.00)                                      #
 #               https in .env file or logo / pictures doesn't show (1.10)   #
+#               (1.11)  Fixes to support reverse proxies, added prompts     #
+#                       instead of relying on hardcoded values              #
 #                                                                           #
 # Info:         Installing Snipe-IT on Debian 11                            #
 #               Most of the work done by the install                        #
